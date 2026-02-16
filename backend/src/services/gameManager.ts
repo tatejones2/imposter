@@ -5,6 +5,7 @@ import { gameSessionRepository } from '../repositories/gameSessionRepository.js'
 import { wordRepository } from '../repositories/categoryRepository.js';
 import { playerRoleRepository } from '../repositories/playerRoleRepository.js';
 import { scoreRepository } from '../repositories/scoreRepository.js';
+import { voteRepository } from '../repositories/voteRepository.js';
 
 export class GameManager {
   private rooms: Map<string, RoomState> = new Map();
@@ -377,6 +378,178 @@ export class GameManager {
     const imposters = roles.filter((r) => r.role === 'IMPOSTER').length;
     const players = roles.length - imposters;
     return { imposters, players };
+  }
+
+  // ==================== PHASE 7: EDGE CASE HANDLING ====================
+
+  /**
+   * Handle player disconnect - mark as disconnected
+   * Allow reconnection within a timeout window
+   */
+  handlePlayerDisconnect(roomId: string, playerId: string): void {
+    const room = this.rooms.get(roomId);
+    if (!room) return;
+
+    const player = room.players.get(playerId);
+    if (player) {
+      player.isConnected = false;
+      // Keep the player in the room for potential reconnection
+    }
+  }
+
+  /**
+   * Handle player reconnection - restore connection
+   */
+  handlePlayerReconnect(roomId: string, playerId: string, newSocketId: string): void {
+    const room = this.rooms.get(roomId);
+    if (!room) return;
+
+    const player = room.players.get(playerId);
+    if (player) {
+      player.isConnected = true;
+      player.socketId = newSocketId;
+    }
+  }
+
+  /**
+   * Check if host is still connected
+   * If host disconnected, reassign to oldest remaining player
+   */
+  async reassignHostIfNeeded(
+    roomId: string
+  ): Promise<{ newHostId: string | null; hostChanged: boolean }> {
+    const room = this.rooms.get(roomId);
+    if (!room) {
+      return { newHostId: null, hostChanged: false };
+    }
+
+    const host = room.players.get(room.hostId);
+
+    // If host is still connected, no action needed
+    if (host && host.isConnected) {
+      return { newHostId: null, hostChanged: false };
+    }
+
+    // Host disconnected - find oldest remaining connected player
+    let oldestPlayer: PlayerState | null = null;
+
+    for (const player of room.players.values()) {
+      if (player.isConnected) {
+        // Since we don't have join time, use alphabetical order as proxy for "oldest"
+        // In production, store joinedAt timestamp
+        if (!oldestPlayer || player.id < oldestPlayer.id) {
+          oldestPlayer = player;
+        }
+      }
+    }
+
+    if (oldestPlayer) {
+      const newHostId = oldestPlayer.id;
+      room.hostId = newHostId;
+      await roomRepository.updateHost(roomId, newHostId);
+      return { newHostId, hostChanged: true };
+    }
+
+    // No connected players left - game should end
+    return { newHostId: null, hostChanged: false };
+  }
+
+  /**
+   * Check if game has enough players to continue
+   * Returns { hasEnough, currentCount, minRequired }
+   */
+  checkSufficientPlayers(roomId: string): {
+    hasEnough: boolean;
+    currentCount: number;
+    minRequired: number;
+  } {
+    const room = this.rooms.get(roomId);
+    if (!room) {
+      return { hasEnough: false, currentCount: 0, minRequired: 2 };
+    }
+
+    const connectedPlayers = Array.from(room.players.values()).filter((p) => p.isConnected);
+    const minRequired = 2;
+    const hasEnough = connectedPlayers.length >= minRequired;
+
+    return { hasEnough, currentCount: connectedPlayers.length, minRequired };
+  }
+
+  /**
+   * Handle tied votes - randomly select from tied players
+   * Returns eliminated playerId
+   */
+  resolveTiedVotes(voteCounts: Map<string, number>): string | null {
+    let maxVotes = 0;
+    let tied: string[] = [];
+
+    for (const [playerId, count] of voteCounts.entries()) {
+      if (count > maxVotes) {
+        maxVotes = count;
+        tied = [playerId];
+      } else if (count === maxVotes) {
+        tied.push(playerId);
+      }
+    }
+
+    if (tied.length === 0) return null;
+    if (tied.length === 1) return tied[0];
+
+    // Randomly select one of the tied players
+    const randomIndex = Math.floor(Math.random() * tied.length);
+    return tied[randomIndex];
+  }
+
+  /**
+   * Get connected players in a room (filters out disconnected)
+   */
+  getConnectedRoomPlayers(roomId: string): PlayerState[] {
+    const room = this.rooms.get(roomId);
+    if (!room) return [];
+    return Array.from(room.players.values()).filter((p) => p.isConnected);
+  }
+
+  /**
+   * Clean up disconnected players from a room if game hasn't started
+   * Called when cleaning up after failed connections
+   */
+  async cleanupDisconnectedPlayers(roomId: string): Promise<void> {
+    const room = this.rooms.get(roomId);
+    if (!room || room.gameState) return; // Don't clean up during active game
+
+    const disconnected: string[] = [];
+    for (const [playerId, player] of room.players.entries()) {
+      if (!player.isConnected) {
+        disconnected.push(playerId);
+      }
+    }
+
+    for (const playerId of disconnected) {
+      room.players.delete(playerId);
+    }
+  }
+
+  /**
+   * Get players who haven't voted yet (for vote timeout logic)
+   */
+  async getPendingVoters(
+    gameSessionId: string,
+    roomId: string
+  ): Promise<Array<{ playerId: string; playerName: string }>> {
+    const room = this.rooms.get(roomId);
+    if (!room) return [];
+
+    const votes = await voteRepository.findByGameSessionId(gameSessionId);
+    const votedPlayerIds = new Set(votes.map((v) => v.voterId));
+
+    const pending: Array<{ playerId: string; playerName: string }> = [];
+    for (const player of room.players.values()) {
+      if (player.isConnected && !votedPlayerIds.has(player.id)) {
+        pending.push({ playerId: player.id, playerName: player.name });
+      }
+    }
+
+    return pending;
   }
 }
 

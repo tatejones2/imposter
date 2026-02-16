@@ -43,6 +43,8 @@ export interface ServerToClientEvents {
   round_results: (data: { roomId: string; scores: ScoreData[] }) => void;
   round_complete: (data: { roomId: string; round: number; nextRound: number }) => void;
   game_over: (data: { roomId: string; winner: string; scores: GameScoreData[] }) => void;
+  game_aborted: (data: { roomId: string; reason: string }) => void;
+  host_changed: (data: { roomId: string; newHostId: string }) => void;
   error: (data: { message: string }) => void;
 }
 

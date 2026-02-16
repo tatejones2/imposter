@@ -45,6 +45,17 @@ export const roomRepository = {
     });
   },
 
+  async updateHost(id: string, newHostId: string): Promise<RoomWithData> {
+    return prisma.room.update({
+      where: { id },
+      data: { hostId: newHostId },
+      include: {
+        players: true,
+        gameSessions: true,
+      },
+    });
+  },
+
   async delete(id: string): Promise<void> {
     await prisma.room.delete({
       where: { id },

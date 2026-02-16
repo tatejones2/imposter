@@ -254,27 +254,23 @@ export function setupSocketHandlers(
             data.votedForPlayerId
           );
 
-          // Check if all players have voted
-          const players = gameManager.getRoomPlayers(data.roomId);
+          // Check if all connected players have voted
+          const connectedPlayers = gameManager.getConnectedRoomPlayers(data.roomId);
           const votes = await voteRepository.findByGameSessionId(gameState.sessionId);
 
-          if (votes.length >= players.length) {
+          if (votes.length >= connectedPlayers.length) {
             // Tally votes and determine who was eliminated
             const voteCounts = new Map<string, number>();
             for (const vote of votes) {
               voteCounts.set(vote.votedForId, (voteCounts.get(vote.votedForId) || 0) + 1);
             }
 
-            let maxVotes = 0;
-            let eliminated: string | null = null;
-            for (const [playerId, count] of voteCounts.entries()) {
-              if (count > maxVotes) {
-                maxVotes = count;
-                eliminated = playerId;
-              }
-            }
+            // PHASE 7: Use tie-breaking logic if needed
+            const eliminated = gameManager.resolveTiedVotes(voteCounts);
 
-            const eliminatedPlayer = gameManager.getPlayer(data.roomId, eliminated || '');
+            const eliminatedPlayer = eliminated
+              ? gameManager.getPlayer(data.roomId, eliminated)
+              : null;
             if (eliminatedPlayer) {
               io.to(data.roomId).emit('vote_results', {
                 roomId: data.roomId,
@@ -303,25 +299,34 @@ export function setupSocketHandlers(
                   scores: totalScores as GameScoreData[],
                 });
               } else {
-                // Transition to reveal phase for imposter to guess
-                await gameManager.transitionPhase(data.roomId, 'REVEAL_PHASE');
-                io.to(data.roomId).emit('phase_changed', {
-                  roomId: data.roomId,
-                  phase: 'REVEAL_PHASE',
-                });
-                io.to(data.roomId).emit('round_results', {
-                  roomId: data.roomId,
-                  scores: Array.from(scores.entries())
-                    .map(([playerId, points]) => {
-                      const player = gameManager.getPlayer(data.roomId, playerId);
-                      return {
-                        playerId,
-                        playerName: player?.name || 'Unknown',
-                        points,
-                      } as ScoreData;
-                    })
-                    .filter(Boolean),
-                });
+                // PHASE 7: Check if enough players remain
+                const { hasEnough } = gameManager.checkSufficientPlayers(data.roomId);
+                if (!hasEnough) {
+                  io.to(data.roomId).emit('game_aborted', {
+                    roomId: data.roomId,
+                    reason: 'Not enough players to continue',
+                  });
+                } else {
+                  // Transition to reveal phase for imposter to guess
+                  await gameManager.transitionPhase(data.roomId, 'REVEAL_PHASE');
+                  io.to(data.roomId).emit('phase_changed', {
+                    roomId: data.roomId,
+                    phase: 'REVEAL_PHASE',
+                  });
+                  io.to(data.roomId).emit('round_results', {
+                    roomId: data.roomId,
+                    scores: Array.from(scores.entries())
+                      .map(([playerId, points]) => {
+                        const player = gameManager.getPlayer(data.roomId, playerId);
+                        return {
+                          playerId,
+                          playerName: player?.name || 'Unknown',
+                          points,
+                        } as ScoreData;
+                      })
+                      .filter(Boolean),
+                  });
+                }
               }
             }
           }
@@ -441,12 +446,71 @@ export function setupSocketHandlers(
       });
 
       // ==================== DISCONNECT ====================
-      socket.on('disconnect', () => {
+      socket.on('disconnect', async () => {
         console.log(`Client disconnected: ${socket.id}`);
 
-        if (socket.data.playerId) {
-          // Mark player as disconnected but don't remove them yet
-          // They can reconnect within a timeout window
+        if (!socket.data.playerId) return;
+
+        // Find which room this player was in
+        let playerRoomId: string | null = null;
+        for (const room of gameManager.getRooms()) {
+          if (room.players.has(socket.data.playerId)) {
+            playerRoomId = room.id;
+            break;
+          }
+        }
+
+        if (!playerRoomId) return;
+
+        // PHASE 7: Mark player as disconnected
+        gameManager.handlePlayerDisconnect(playerRoomId, socket.data.playerId);
+
+        const room = gameManager.getRoom(playerRoomId);
+        if (!room) return;
+
+        // PHASE 7: Check if host disconnected
+        if (room.hostId === socket.data.playerId) {
+          const { newHostId, hostChanged } = await gameManager.reassignHostIfNeeded(playerRoomId);
+
+          if (hostChanged && newHostId) {
+            io.to(playerRoomId).emit('host_changed', {
+              roomId: playerRoomId,
+              newHostId,
+            });
+          } else if (!newHostId) {
+            // No connected players left - abort game
+            io.to(playerRoomId).emit('game_aborted', {
+              roomId: playerRoomId,
+              reason: 'Not enough players connected',
+            });
+          }
+        }
+
+        // PHASE 7: Check if there are enough players to continue
+        const gameState = gameManager.getGameState(playerRoomId);
+        if (gameState) {
+          const { hasEnough, currentCount, minRequired } =
+            gameManager.checkSufficientPlayers(playerRoomId);
+
+          if (!hasEnough) {
+            // Abort the game
+            io.to(playerRoomId).emit('game_aborted', {
+              roomId: playerRoomId,
+              reason: `Not enough players. ${currentCount} connected, ${minRequired} required.`,
+            });
+          } else {
+            // Update player list with disconnected status
+            io.to(playerRoomId).emit('player_list_updated', {
+              roomId: playerRoomId,
+              players: Array.from(room.players.values()),
+            });
+          }
+        } else {
+          // Not in a game yet, just clean up lobby
+          io.to(playerRoomId).emit('player_list_updated', {
+            roomId: playerRoomId,
+            players: Array.from(room.players.values()),
+          });
         }
       });
     }
