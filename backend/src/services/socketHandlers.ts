@@ -1,5 +1,11 @@
 import type { Server as SocketIOServer, Socket } from 'socket.io';
-import type { ClientToServerEvents, ServerToClientEvents, SocketData } from '../types/socket.js';
+import type {
+  ClientToServerEvents,
+  ServerToClientEvents,
+  SocketData,
+  GameScoreData,
+  ScoreData,
+} from '../types/socket.js';
 import { gameManager } from './gameManager.js';
 import { playerRepository } from '../repositories/playerRepository.js';
 import { playerRoleRepository } from '../repositories/playerRoleRepository.js';
@@ -129,6 +135,27 @@ export function setupSocketHandlers(
             roomId: data.roomId,
             phase: 'ASSIGN_ROLES',
           });
+
+          // PHASE 6: Auto-transition to CLUE_PHASE after roles are verified and a delay
+          setTimeout(async () => {
+            try {
+              // Verify all roles are assigned before clue phase
+              const allRolesAssigned = await gameManager.verifyAllRolesAssigned(
+                gameState.sessionId,
+                data.roomId
+              );
+
+              if (allRolesAssigned) {
+                await gameManager.transitionPhase(data.roomId, 'CLUE_PHASE');
+                io.to(data.roomId).emit('phase_changed', {
+                  roomId: data.roomId,
+                  phase: 'CLUE_PHASE',
+                });
+              }
+            } catch (e) {
+              console.error('Failed to transition to clue phase:', e);
+            }
+          }, 2000); // 2 second delay to let clients see role assignments
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Failed to start game';
           socket.emit('error', { message });
@@ -211,13 +238,12 @@ export function setupSocketHandlers(
             throw new Error('Not in voting phase');
           }
 
-          // Check if player has already voted
-          const existingVote = await playerRoleRepository.findByPlayerAndSession(
+          const playerRole = await playerRoleRepository.findByPlayerAndSession(
             socket.data.playerId,
             gameState.sessionId
           );
 
-          if (!existingVote) {
+          if (!playerRole) {
             throw new Error('Player role not found');
           }
 
@@ -240,7 +266,7 @@ export function setupSocketHandlers(
             }
 
             let maxVotes = 0;
-            let eliminated = '';
+            let eliminated: string | null = null;
             for (const [playerId, count] of voteCounts.entries()) {
               if (count > maxVotes) {
                 maxVotes = count;
@@ -248,7 +274,7 @@ export function setupSocketHandlers(
               }
             }
 
-            const eliminatedPlayer = gameManager.getPlayer(data.roomId, eliminated);
+            const eliminatedPlayer = gameManager.getPlayer(data.roomId, eliminated || '');
             if (eliminatedPlayer) {
               io.to(data.roomId).emit('vote_results', {
                 roomId: data.roomId,
@@ -256,12 +282,47 @@ export function setupSocketHandlers(
                 reason: 'Voted out',
               });
 
-              // Transition to reveal phase
-              await gameManager.transitionPhase(data.roomId, 'REVEAL_PHASE');
-              io.to(data.roomId).emit('phase_changed', {
-                roomId: data.roomId,
-                phase: 'REVEAL_PHASE',
-              });
+              // PHASE 6: Calculate scores for this round
+              const scores = await gameManager.calculateRoundScores(
+                gameState.sessionId,
+                eliminated,
+                false,
+                gameState.round
+              );
+
+              // PHASE 6: Check if all imposters were eliminated (players win)
+              const playersWon = await gameManager.checkPlayersWinCondition(gameState.sessionId);
+
+              if (playersWon.won) {
+                // Game over - players won
+                const totalScores = await gameManager.getTotalGameScores(gameState.sessionId);
+
+                io.to(data.roomId).emit('game_over', {
+                  roomId: data.roomId,
+                  winner: 'Players',
+                  scores: totalScores as GameScoreData[],
+                });
+              } else {
+                // Transition to reveal phase for imposter to guess
+                await gameManager.transitionPhase(data.roomId, 'REVEAL_PHASE');
+                io.to(data.roomId).emit('phase_changed', {
+                  roomId: data.roomId,
+                  phase: 'REVEAL_PHASE',
+                });
+                io.to(data.roomId).emit('round_results', {
+                  roomId: data.roomId,
+                  scores: Array.from(scores.entries())
+                    .map(([playerId, points]) => {
+                      const player = gameManager.getPlayer(data.roomId, playerId);
+                      return {
+                        playerId,
+                        playerName: player?.name || 'Unknown',
+                        points,
+                      } as ScoreData;
+                    })
+                    .filter(Boolean),
+                });
+              }
             }
           }
         } catch (error) {
@@ -282,6 +343,10 @@ export function setupSocketHandlers(
             throw new Error('Not in reveal phase');
           }
 
+          if (!gameState.word) {
+            throw new Error('Game word not found');
+          }
+
           const playerRole = await playerRoleRepository.findByPlayerAndSession(
             socket.data.playerId,
             gameState.sessionId
@@ -295,23 +360,79 @@ export function setupSocketHandlers(
             throw new Error('Only imposters can guess');
           }
 
-          // Check if guess is correct
-          const isCorrect = data.word.toLowerCase() === gameState.word?.toLowerCase();
+          // PHASE 6: Check if imposter guess is correct
+          const impostorWon = gameManager.checkImpostorWinCondition(data.word, gameState.word);
 
-          if (isCorrect) {
-            // Imposter wins!
+          if (impostorWon.won) {
+            // Imposter guessed correctly - game over!
+            // Calculate scores with imposter win bonus
+            await gameManager.calculateRoundScores(
+              gameState.sessionId,
+              null,
+              true, // imposter guessed correctly
+              gameState.round
+            );
+
+            const totalScores = await gameManager.getTotalGameScores(gameState.sessionId);
+
             io.to(data.roomId).emit('game_over', {
               roomId: data.roomId,
               winner: 'Imposter',
-              scores: [],
+              scores: totalScores as GameScoreData[],
             });
           } else {
-            // Wrong guess, transition to score phase
+            // Wrong guess - transition to score phase
+            // Calculate scores for this round (imposter did not guess)
+            await gameManager.calculateRoundScores(
+              gameState.sessionId,
+              null,
+              false,
+              gameState.round
+            );
+
             await gameManager.transitionPhase(data.roomId, 'SCORE_PHASE');
-            io.to(data.roomId).emit('phase_changed', {
-              roomId: data.roomId,
-              phase: 'SCORE_PHASE',
-            });
+
+            // PHASE 6: Check if we continue to next round or end game
+            const { gameEnded, nextRound } = await gameManager.prepareNextRound(
+              data.roomId,
+              gameState.round,
+              gameState.maxRounds
+            );
+
+            if (gameEnded) {
+              // Get final scores and declare overall winner
+              const totalScores = await gameManager.getTotalGameScores(gameState.sessionId);
+              const overallWinner =
+                totalScores.length > 0 && totalScores[0]?.totalPoints > 0
+                  ? 'Players' // Most points wins (or we could use other logic)
+                  : 'Draw';
+
+              io.to(data.roomId).emit('game_over', {
+                roomId: data.roomId,
+                winner: overallWinner,
+                scores: totalScores as GameScoreData[],
+              });
+            } else {
+              // Continue to next round
+              io.to(data.roomId).emit('round_complete', {
+                roomId: data.roomId,
+                round: gameState.round,
+                nextRound: nextRound ?? gameState.round + 1,
+              });
+
+              // After a short delay, auto-transition to next round
+              setTimeout(async () => {
+                try {
+                  await gameManager.transitionPhase(data.roomId, 'ASSIGN_ROLES');
+                  io.to(data.roomId).emit('phase_changed', {
+                    roomId: data.roomId,
+                    phase: 'ASSIGN_ROLES',
+                  });
+                } catch (e) {
+                  console.error('Failed to transition to next round:', e);
+                }
+              }, 3000); // 3 second delay before next round
+            }
           }
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Failed to guess word';

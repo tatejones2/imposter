@@ -25,6 +25,12 @@ export interface ScoreData {
   points: number;
 }
 
+export interface GameScoreData {
+  playerId: string;
+  name: string;
+  totalPoints: number;
+}
+
 export interface ServerToClientEvents {
   room_created: (data: { roomId: string; room: RoomData }) => void;
   room_joined: (data: { roomId: string; room: RoomData }) => void;
@@ -35,7 +41,8 @@ export interface ServerToClientEvents {
   voting_started: (data: { roomId: string; players: PlayerState[] }) => void;
   vote_results: (data: { roomId: string; eliminated: string; reason: string }) => void;
   round_results: (data: { roomId: string; scores: ScoreData[] }) => void;
-  game_over: (data: { roomId: string; winner: string; scores: ScoreData[] }) => void;
+  round_complete: (data: { roomId: string; round: number; nextRound: number }) => void;
+  game_over: (data: { roomId: string; winner: string; scores: GameScoreData[] }) => void;
   error: (data: { message: string }) => void;
 }
 
