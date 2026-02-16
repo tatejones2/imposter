@@ -44,7 +44,7 @@ export function ClueInput({
         <button
           type="submit"
           disabled={disabled || !clueText.trim()}
-          className="px-8 py-3 bg-teal-300 hover:bg-teal-200 text-teal-900 rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed font-bold transition transform hover:scale-105 shadow-xl border-2 border-teal-400"
+          className="px-8 py-3 bg-teal-300 hover:bg-teal-200 disabled:bg-gray-400 text-teal-900 disabled:text-white rounded-lg disabled:cursor-not-allowed font-bold transition transform hover:scale-105 shadow-xl border-2 border-teal-400"
         >
           Submit
         </button>

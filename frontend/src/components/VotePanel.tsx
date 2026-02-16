@@ -28,7 +28,7 @@ export function VotePanel({
               key={player.id}
               onClick={() => onVote(player.id)}
               disabled={disabled}
-              className="p-4 border-3 border-orange-300 bg-orange-200 hover:bg-orange-100 rounded-lg hover:border-orange-400 disabled:bg-gray-200 disabled:cursor-not-allowed transition-all transform hover:scale-105 font-bold text-orange-900 shadow-md hover:shadow-lg"
+              className="p-4 border-3 border-orange-300 bg-orange-200 hover:bg-orange-100 disabled:bg-gray-400 rounded-lg hover:border-orange-400 disabled:cursor-not-allowed transition-all transform hover:scale-105 font-bold text-orange-900 disabled:text-white shadow-md hover:shadow-lg"
             >
               <p className="font-bold text-lg">{player.name}</p>
               <p className="text-sm text-orange-800">Vote</p>
