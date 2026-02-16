@@ -3,6 +3,7 @@ import type { ClientToServerEvents, ServerToClientEvents, SocketData } from '../
 import { gameManager } from './gameManager.js';
 import { playerRepository } from '../repositories/playerRepository.js';
 import { playerRoleRepository } from '../repositories/playerRoleRepository.js';
+import { voteRepository } from '../repositories/voteRepository.js';
 
 export function setupSocketHandlers(
   io: SocketIOServer<
@@ -155,6 +156,165 @@ export function setupSocketHandlers(
           }
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Failed to leave room';
+          socket.emit('error', { message });
+        }
+      });
+
+      // ==================== SUBMIT CLUE ====================
+      socket.on('submit_clue', async (data) => {
+        try {
+          if (!socket.data.playerId) {
+            throw new Error('Player not found');
+          }
+
+          const room = gameManager.getRoom(data.roomId);
+          if (!room) {
+            throw new Error('Room not found');
+          }
+
+          const gameState = gameManager.getGameState(data.roomId);
+          if (!gameState || gameState.currentPhase !== 'CLUE_PHASE') {
+            throw new Error('Not in clue phase');
+          }
+
+          const player = gameManager.getPlayer(data.roomId, socket.data.playerId);
+          if (!player) {
+            throw new Error('Player not found in room');
+          }
+
+          // Broadcast clue to all players
+          io.to(data.roomId).emit('clue_submitted', {
+            roomId: data.roomId,
+            playerName: player.name,
+            clue: data.clue,
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to submit clue';
+          socket.emit('error', { message });
+        }
+      });
+
+      // ==================== SUBMIT VOTE ====================
+      socket.on('submit_vote', async (data) => {
+        try {
+          if (!socket.data.playerId) {
+            throw new Error('Player not found');
+          }
+
+          const room = gameManager.getRoom(data.roomId);
+          if (!room) {
+            throw new Error('Room not found');
+          }
+
+          const gameState = gameManager.getGameState(data.roomId);
+          if (!gameState || gameState.currentPhase !== 'VOTING_PHASE') {
+            throw new Error('Not in voting phase');
+          }
+
+          // Check if player has already voted
+          const existingVote = await playerRoleRepository.findByPlayerAndSession(
+            socket.data.playerId,
+            gameState.sessionId
+          );
+
+          if (!existingVote) {
+            throw new Error('Player role not found');
+          }
+
+          // Record vote in database
+          await voteRepository.create(
+            gameState.sessionId,
+            socket.data.playerId,
+            data.votedForPlayerId
+          );
+
+          // Check if all players have voted
+          const players = gameManager.getRoomPlayers(data.roomId);
+          const votes = await voteRepository.findByGameSessionId(gameState.sessionId);
+
+          if (votes.length >= players.length) {
+            // Tally votes and determine who was eliminated
+            const voteCounts = new Map<string, number>();
+            for (const vote of votes) {
+              voteCounts.set(vote.votedForId, (voteCounts.get(vote.votedForId) || 0) + 1);
+            }
+
+            let maxVotes = 0;
+            let eliminated = '';
+            for (const [playerId, count] of voteCounts.entries()) {
+              if (count > maxVotes) {
+                maxVotes = count;
+                eliminated = playerId;
+              }
+            }
+
+            const eliminatedPlayer = gameManager.getPlayer(data.roomId, eliminated);
+            if (eliminatedPlayer) {
+              io.to(data.roomId).emit('vote_results', {
+                roomId: data.roomId,
+                eliminated: eliminatedPlayer.name,
+                reason: 'Voted out',
+              });
+
+              // Transition to reveal phase
+              await gameManager.transitionPhase(data.roomId, 'REVEAL_PHASE');
+              io.to(data.roomId).emit('phase_changed', {
+                roomId: data.roomId,
+                phase: 'REVEAL_PHASE',
+              });
+            }
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to submit vote';
+          socket.emit('error', { message });
+        }
+      });
+
+      // ==================== GUESS WORD ====================
+      socket.on('guess_word', async (data) => {
+        try {
+          if (!socket.data.playerId) {
+            throw new Error('Player not found');
+          }
+
+          const gameState = gameManager.getGameState(data.roomId);
+          if (!gameState || gameState.currentPhase !== 'REVEAL_PHASE') {
+            throw new Error('Not in reveal phase');
+          }
+
+          const playerRole = await playerRoleRepository.findByPlayerAndSession(
+            socket.data.playerId,
+            gameState.sessionId
+          );
+
+          if (!playerRole) {
+            throw new Error('Player role not found');
+          }
+
+          if (playerRole.role !== 'IMPOSTER') {
+            throw new Error('Only imposters can guess');
+          }
+
+          // Check if guess is correct
+          const isCorrect = data.word.toLowerCase() === gameState.word?.toLowerCase();
+
+          if (isCorrect) {
+            // Imposter wins!
+            io.to(data.roomId).emit('game_over', {
+              roomId: data.roomId,
+              winner: 'Imposter',
+              scores: [],
+            });
+          } else {
+            // Wrong guess, transition to score phase
+            await gameManager.transitionPhase(data.roomId, 'SCORE_PHASE');
+            io.to(data.roomId).emit('phase_changed', {
+              roomId: data.roomId,
+              phase: 'SCORE_PHASE',
+            });
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to guess word';
           socket.emit('error', { message });
         }
       });
