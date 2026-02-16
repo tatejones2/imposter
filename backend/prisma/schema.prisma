@@ -1,0 +1,142 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Room {
+  id        String   @id @default(cuid())
+  name      String
+  hostId    String
+  status    RoomStatus @default(WAITING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  players       Player[]
+  gameSessions  GameSession[]
+}
+
+enum RoomStatus {
+  WAITING
+  PLAYING
+  FINISHED
+}
+
+model Player {
+  id        String   @id @default(cuid())
+  roomId    String
+  socketId  String
+  name      String
+  joinedAt  DateTime @default(now())
+
+  room          Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  playerRoles   PlayerRole[]
+  votes         Vote[]
+  scores        Score[]
+
+  @@unique([roomId, socketId])
+  @@index([roomId])
+}
+
+model Category {
+  id    String   @id @default(cuid())
+  name  String   @unique
+  words Word[]
+}
+
+model Word {
+  id         String   @id @default(cuid())
+  text       String
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  gameSessions GameSession[]
+
+  @@unique([categoryId, text])
+  @@index([categoryId])
+}
+
+model GameSession {
+  id              String        @id @default(cuid())
+  roomId          String
+  wordId          String
+  currentPhase    GamePhase     @default(LOBBY)
+  round           Int           @default(1)
+  maxRounds       Int           @default(3)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  room            Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  word            Word          @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  playerRoles     PlayerRole[]
+  votes           Vote[]
+  scores          Score[]
+
+  @@index([roomId])
+  @@index([wordId])
+}
+
+enum GamePhase {
+  LOBBY
+  ASSIGN_ROLES
+  CLUE_PHASE
+  VOTING_PHASE
+  REVEAL_PHASE
+  SCORE_PHASE
+}
+
+model PlayerRole {
+  id              String        @id @default(cuid())
+  gameSessionId   String
+  playerId        String
+  role            GameRole
+  guessedWord     String?
+
+  gameSession     GameSession   @relation(fields: [gameSessionId], references: [id], onDelete: Cascade)
+  player          Player        @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([gameSessionId, playerId])
+  @@index([gameSessionId])
+  @@index([playerId])
+}
+
+enum GameRole {
+  PLAYER
+  IMPOSTER
+}
+
+model Vote {
+  id              String        @id @default(cuid())
+  gameSessionId   String
+  voterId         String
+  votedForId      String
+  createdAt       DateTime      @default(now())
+
+  gameSession     GameSession   @relation(fields: [gameSessionId], references: [id], onDelete: Cascade)
+  voter           Player        @relation(fields: [voterId], references: [id], onDelete: Cascade)
+
+  @@unique([gameSessionId, voterId])
+  @@index([gameSessionId])
+  @@index([voterId])
+}
+
+model Score {
+  id              String        @id @default(cuid())
+  gameSessionId   String
+  playerId        String
+  points          Int           @default(0)
+  roundNumber     Int
+
+  gameSession     GameSession   @relation(fields: [gameSessionId], references: [id], onDelete: Cascade)
+  player          Player        @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([gameSessionId, playerId, roundNumber])
+  @@index([gameSessionId])
+  @@index([playerId])
+}
