@@ -67,14 +67,14 @@ export function HomePage({
             <button
               onClick={() => setMode("create")}
               disabled={!isConnected}
-              className="w-full py-6 px-6 bg-amber-300 hover:bg-amber-200 disabled:bg-gray-400 text-amber-900 disabled:text-white rounded-2xl disabled:cursor-not-allowed font-bold text-2xl transition transform hover:scale-105 shadow-2xl border-4 border-amber-400 hover:border-amber-300"
+              className="w-full py-6 px-6 bg-amber-100 hover:bg-amber-50 disabled:bg-gray-400 text-amber-900 disabled:text-white rounded-2xl disabled:cursor-not-allowed font-bold text-2xl transition transform hover:scale-105 shadow-2xl border-4 border-amber-300 hover:border-amber-200"
             >
               ✨ Create Room
             </button>
             <button
               onClick={() => setMode("join")}
               disabled={!isConnected}
-              className="w-full py-6 px-6 bg-teal-300 hover:bg-teal-200 disabled:bg-gray-400 text-teal-900 disabled:text-white rounded-2xl disabled:cursor-not-allowed font-bold text-2xl transition transform hover:scale-105 shadow-2xl border-4 border-teal-400 hover:border-teal-300"
+              className="w-full py-6 px-6 bg-teal-100 hover:bg-teal-50 disabled:bg-gray-400 text-teal-900 disabled:text-white rounded-2xl disabled:cursor-not-allowed font-bold text-2xl transition transform hover:scale-105 shadow-2xl border-4 border-teal-300 hover:border-teal-200"
             >
               🔑 Join Room
             </button>
@@ -108,7 +108,7 @@ export function HomePage({
             <button
               type="submit"
               disabled={!roomName.trim() || !playerName.trim()}
-              className="w-full py-6 px-6 bg-amber-300 hover:bg-amber-200 disabled:bg-gray-400 text-amber-900 disabled:text-white rounded-2xl disabled:cursor-not-allowed font-bold text-2xl transition transform hover:scale-105 shadow-2xl border-4 border-amber-400 hover:border-amber-300"
+              className="w-full py-6 px-6 bg-amber-100 hover:bg-amber-50 disabled:bg-gray-400 text-amber-900 disabled:text-white rounded-2xl disabled:cursor-not-allowed font-bold text-2xl transition transform hover:scale-105 shadow-2xl border-4 border-amber-300 hover:border-amber-200"
             >
               ✨ Create Room
             </button>
@@ -149,7 +149,7 @@ export function HomePage({
             <button
               type="submit"
               disabled={!roomId.trim() || !playerName.trim()}
-              className="w-full py-6 px-6 bg-teal-300 hover:bg-teal-200 disabled:bg-gray-400 text-teal-900 disabled:text-white rounded-2xl disabled:cursor-not-allowed font-bold text-2xl transition transform hover:scale-105 shadow-2xl border-4 border-teal-400 hover:border-teal-300"
+              className="w-full py-6 px-6 bg-teal-100 hover:bg-teal-50 disabled:bg-gray-400 text-teal-900 disabled:text-white rounded-2xl disabled:cursor-not-allowed font-bold text-2xl transition transform hover:scale-105 shadow-2xl border-4 border-teal-300 hover:border-teal-200"
             >
               🔑 Join Room
             </button>
