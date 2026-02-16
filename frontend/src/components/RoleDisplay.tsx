@@ -10,30 +10,33 @@ export function RoleDisplay({ role, word }: RoleDisplayProps) {
 
   return (
     <div
-      className={`rounded-lg shadow p-6 ${
+      className={`rounded-2xl shadow-xl p-8 border-4 ${
         isImposter
-          ? "bg-gradient-to-br from-red-100 to-red-50"
-          : "bg-gradient-to-br from-green-100 to-green-50"
+          ? "bg-gradient-to-br from-red-100 to-red-50 border-red-300"
+          : "bg-gradient-to-br from-emerald-100 to-emerald-50 border-emerald-300"
       }`}
     >
-      <p className="text-sm text-gray-600 mb-2">Your Role</p>
+      <p className={`text-sm uppercase tracking-widest font-bold mb-2 ${
+        isImposter ? "text-red-700" : "text-emerald-700"
+      }`}>Your Role</p>
       <p
-        className={`text-3xl font-bold mb-4 ${
-          isImposter ? "text-red-600" : "text-green-600"
+        className={`text-4xl font-bold mb-4 ${
+          isImposter ? "text-red-700" : "text-emerald-700"
         }`}
+        style={{ fontFamily: "Georgia, serif" }}
       >
         {role}
       </p>
 
       {!isImposter && word && (
-        <div className="mt-4 p-3 bg-white rounded border-2 border-green-300">
-          <p className="text-xs text-gray-600 mb-1">The Secret Word Is</p>
-          <p className="text-2xl font-bold text-green-700">{word}</p>
+        <div className="mt-6 p-4 bg-white rounded-xl border-4 border-emerald-300 shadow-md">
+          <p className="text-xs uppercase tracking-widest font-bold text-emerald-700 mb-2">The Secret Word Is</p>
+          <p className="text-3xl font-bold text-emerald-900" style={{ fontFamily: "Georgia, serif" }}>{word}</p>
         </div>
       )}
 
       {isImposter && (
-        <p className="text-sm text-red-700">
+        <p className="text-sm font-semibold text-red-800 leading-relaxed">
           You are the imposter! Find the word by listening to clues, or guess it
           in the reveal phase.
         </p>

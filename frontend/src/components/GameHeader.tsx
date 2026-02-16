@@ -20,18 +20,18 @@ export function GameHeader({
     .join(" ");
 
   return (
-    <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-lg shadow-lg">
+    <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-white p-8 rounded-2xl shadow-2xl border-4 border-amber-300">
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h1 className="text-3xl font-bold">{roomName}</h1>
-          <p className="text-blue-100">Imposter Word Game</p>
+          <h1 className="text-4xl font-bold" style={{ fontFamily: "Georgia, serif" }}>{roomName}</h1>
+          <p className="text-amber-100 text-lg">Imposter Word Game</p>
         </div>
         {playerRole && (
           <div
-            className={`px-4 py-2 rounded-full font-bold ${
+            className={`px-6 py-3 rounded-full font-bold text-lg ${
               playerRole === "IMPOSTER"
-                ? "bg-red-500 text-white"
-                : "bg-green-500 text-white"
+                ? "bg-red-600 text-white shadow-lg border-2 border-red-300"
+                : "bg-emerald-600 text-white shadow-lg border-2 border-emerald-300"
             }`}
           >
             {playerRole}
@@ -40,12 +40,12 @@ export function GameHeader({
       </div>
       <div className="grid grid-cols-3 gap-4">
         <div>
-          <p className="text-blue-100 text-sm">Phase</p>
-          <p className="text-lg font-semibold">{phaseDisplay}</p>
+          <p className="text-amber-100 text-sm font-semibold uppercase tracking-wider">Phase</p>
+          <p className="text-lg font-bold text-white">{phaseDisplay}</p>
         </div>
         <div>
-          <p className="text-blue-100 text-sm">Round</p>
-          <p className="text-lg font-semibold">
+          <p className="text-amber-100 text-sm font-semibold uppercase tracking-wider">Round</p>
+          <p className="text-lg font-bold text-white">
             {round} / {maxRounds}
           </p>
         </div>

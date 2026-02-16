@@ -32,17 +32,19 @@ export function Timer({ durationSeconds, onTimeUp }: TimerProps) {
   const progress = (timeLeft / durationSeconds) * 100;
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <p className="text-sm text-gray-600 mb-2">Time Remaining</p>
-      <div className="mb-3">
-        <p className="text-4xl font-bold text-center">
+    <div className="bg-white rounded-2xl shadow-xl p-8 border-4 border-amber-100">
+      <p className="text-sm uppercase tracking-widest font-bold text-amber-700 mb-3">Time Remaining</p>
+      <div className="mb-4">
+        <p className="text-5xl font-bold text-center text-amber-900" style={{ fontFamily: "Georgia, serif" }}>
           {minutes}:{seconds.toString().padStart(2, "0")}
         </p>
       </div>
-      <div className="w-full bg-gray-200 rounded-full h-2">
+      <div className="w-full bg-gray-300 rounded-full h-3 shadow-inner overflow-hidden">
         <div
-          className={`h-2 rounded-full transition-all ${
-            progress > 25 ? "bg-green-500" : "bg-red-500"
+          className={`h-3 rounded-full transition-all ${
+            progress > 25
+              ? "bg-gradient-to-r from-emerald-500 to-teal-500"
+              : "bg-gradient-to-r from-red-500 to-pink-500"
           }`}
           style={{ width: `${progress}%` }}
         />

@@ -28,23 +28,23 @@ export function ClueInput({
     : "Give a clue about the word...";
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6">
-      <label className="block text-sm font-medium text-gray-700 mb-2">
+    <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl p-8 border-4 border-teal-100">
+      <label className="block text-sm uppercase tracking-widest font-bold text-teal-900 mb-3">
         Your Clue
       </label>
-      <div className="flex gap-2">
+      <div className="flex gap-3">
         <input
           type="text"
           value={clueText}
           onChange={(e) => setClueText(e.target.value)}
           placeholder={placeholder}
           disabled={disabled}
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+          className="flex-1 px-4 py-3 border-2 border-teal-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-gray-100 disabled:cursor-not-allowed bg-teal-50 text-teal-900 placeholder-teal-400"
         />
         <button
           type="submit"
           disabled={disabled || !clueText.trim()}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium"
+          className="px-8 py-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-lg hover:from-teal-600 hover:to-cyan-600 disabled:bg-gray-400 disabled:cursor-not-allowed font-bold transition transform hover:scale-105 shadow-lg"
         >
           Submit
         </button>
