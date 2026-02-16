@@ -63,18 +63,18 @@ export function HomePage({
         )}
 
         {!mode ? (
-          <div className="space-y-4">
+          <div className="space-y-4 flex flex-col">
             <button
               onClick={() => setMode("create")}
               disabled={!isConnected}
-              className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl hover:from-amber-600 hover:to-orange-600 disabled:bg-gray-400 font-bold text-lg transition transform hover:scale-105 shadow-lg"
+              className="w-full py-4 bg-amber-300 hover:bg-amber-200 text-amber-900 rounded-xl disabled:bg-gray-300 font-bold text-lg transition transform hover:scale-105 shadow-xl border-3 border-amber-400 hover:border-amber-300"
             >
               Create Room
             </button>
             <button
               onClick={() => setMode("join")}
               disabled={!isConnected}
-              className="w-full py-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-xl hover:from-teal-600 hover:to-cyan-600 disabled:bg-gray-400 font-bold text-lg transition transform hover:scale-105 shadow-lg"
+              className="w-full py-4 bg-teal-300 hover:bg-teal-200 text-teal-900 rounded-xl disabled:bg-gray-300 font-bold text-lg transition transform hover:scale-105 shadow-xl border-3 border-teal-400 hover:border-teal-300"
             >
               Join Room
             </button>
@@ -108,14 +108,14 @@ export function HomePage({
             <button
               type="submit"
               disabled={!roomName.trim() || !playerName.trim()}
-              className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl hover:from-amber-600 hover:to-orange-600 disabled:bg-gray-400 font-bold transition transform hover:scale-105 shadow-lg"
+              className="w-full py-4 bg-amber-300 hover:bg-amber-200 text-amber-900 rounded-xl disabled:bg-gray-300 font-bold transition transform hover:scale-105 shadow-xl border-3 border-amber-400 hover:border-amber-300"
             >
               Create Room
             </button>
             <button
               type="button"
               onClick={() => setMode(null)}
-              className="w-full py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 font-semibold transition"
+              className="w-full py-3 bg-gray-300 hover:bg-gray-200 text-gray-900 rounded-lg font-semibold transition border-2 border-gray-400"
             >
               Back
             </button>
@@ -149,14 +149,14 @@ export function HomePage({
             <button
               type="submit"
               disabled={!roomId.trim() || !playerName.trim()}
-              className="w-full py-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-xl hover:from-teal-600 hover:to-cyan-600 disabled:bg-gray-400 font-bold transition transform hover:scale-105 shadow-lg"
+              className="w-full py-4 bg-teal-300 hover:bg-teal-200 text-teal-900 rounded-xl disabled:bg-gray-300 font-bold transition transform hover:scale-105 shadow-xl border-3 border-teal-400 hover:border-teal-300"
             >
               Join Room
             </button>
             <button
               type="button"
               onClick={() => setMode(null)}
-              className="w-full py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 font-semibold transition"
+              className="w-full py-3 bg-gray-300 hover:bg-gray-200 text-gray-900 rounded-lg font-semibold transition border-2 border-gray-400"
             >
               Back
             </button>

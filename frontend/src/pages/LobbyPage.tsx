@@ -44,7 +44,7 @@ export function LobbyPage({
           {isHost && room.players.length >= 2 ? (
             <button
               onClick={onStartGame}
-              className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl hover:from-emerald-600 hover:to-teal-600 font-bold text-lg transition transform hover:scale-105 shadow-lg"
+              className="w-full py-4 bg-emerald-300 hover:bg-emerald-200 text-emerald-900 rounded-xl font-bold text-lg transition transform hover:scale-105 shadow-xl border-3 border-emerald-400 hover:border-emerald-300"
             >
               Start Game
             </button>
@@ -60,7 +60,7 @@ export function LobbyPage({
 
           <button
             onClick={onLeaveRoom}
-            className="w-full mt-4 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 font-bold transition transform hover:scale-105 shadow-lg"
+            className="w-full mt-4 py-4 bg-red-300 hover:bg-red-200 text-red-900 rounded-xl font-bold transition transform hover:scale-105 shadow-xl border-3 border-red-400 hover:border-red-300"
           >
             Leave Room
           </button>

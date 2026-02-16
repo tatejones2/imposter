@@ -20,7 +20,7 @@ export function VotePanel({
       <p className="text-orange-800 mb-6 font-medium">
         Vote for who you think is the imposter
       </p>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-4">
         {players
           .filter((p) => p.id !== currentPlayerId)
           .map((player) => (
@@ -28,10 +28,10 @@ export function VotePanel({
               key={player.id}
               onClick={() => onVote(player.id)}
               disabled={disabled}
-              className="p-4 border-3 border-orange-200 rounded-lg hover:border-red-500 hover:bg-gradient-to-br hover:from-red-100 hover:to-pink-100 disabled:bg-gray-100 disabled:cursor-not-allowed transition-all transform hover:scale-105 font-bold text-orange-900"
+              className="p-4 border-3 border-orange-300 bg-orange-200 hover:bg-orange-100 rounded-lg hover:border-orange-400 disabled:bg-gray-200 disabled:cursor-not-allowed transition-all transform hover:scale-105 font-bold text-orange-900 shadow-md hover:shadow-lg"
             >
               <p className="font-bold text-lg">{player.name}</p>
-              <p className="text-sm text-orange-700">Vote</p>
+              <p className="text-sm text-orange-800">Vote</p>
             </button>
           ))}
       </div>
