@@ -1,35 +1,99 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from "react";
+import { SocketProvider } from "./context/SocketContext";
+import { useGameState } from "./hooks/useGameState";
+import { HomePage } from "./pages/HomePage";
+import { LobbyPage } from "./pages/LobbyPage";
+import { GamePage } from "./pages/GamePage";
 
-function App() {
-  const [count, setCount] = useState(0)
+function AppContent() {
+  const {
+    room,
+    gameState,
+    playerRole,
+    word,
+    players,
+    startGame,
+    submitClue,
+    submitVote,
+    guessWord,
+    leaveRoom,
+  } = useGameState();
+
+  const [currentPage, setCurrentPage] = useState<"home" | "lobby" | "game">(
+    "home",
+  );
+
+  const handleRoomCreated = () => {
+    setCurrentPage("lobby");
+  };
+
+  const handleRoomJoined = () => {
+    setCurrentPage("lobby");
+  };
+
+  const handleStartGame = () => {
+    if (room) {
+      startGame(room.id);
+      setCurrentPage("game");
+    }
+  };
+
+  const handleLeaveRoom = () => {
+    if (room) {
+      leaveRoom(room.id);
+    }
+    setCurrentPage("home");
+  };
+
+  if (currentPage === "home") {
+    return (
+      <HomePage
+        onRoomCreated={handleRoomCreated}
+        onRoomJoined={handleRoomJoined}
+      />
+    );
+  }
+
+  if (currentPage === "lobby" && room) {
+    return (
+      <LobbyPage
+        room={room}
+        isHost={room.hostId === players[0]?.id}
+        currentPlayerId={players[0]?.id}
+        onStartGame={handleStartGame}
+        onLeaveRoom={handleLeaveRoom}
+      />
+    );
+  }
+
+  if (currentPage === "game" && gameState) {
+    return (
+      <GamePage
+        gameState={gameState}
+        playerRole={playerRole}
+        word={word}
+        currentPlayerId={players[0]?.id}
+        onSubmitClue={(clue) => submitClue(gameState.roomId, clue)}
+        onSubmitVote={(votedForId) => submitVote(gameState.roomId, votedForId)}
+        onGuessWord={(wordGuess) => guessWord(gameState.roomId, wordGuess)}
+      />
+    );
+  }
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <HomePage
+      onRoomCreated={handleRoomCreated}
+      onRoomJoined={handleRoomJoined}
+    />
+  );
 }
 
-export default App
+function App() {
+  return (
+    <SocketProvider>
+      <AppContent />
+    </SocketProvider>
+  );
+}
+
+export default App;
