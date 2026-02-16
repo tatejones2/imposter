@@ -48,11 +48,11 @@ export function HomePage({
       <div className="absolute top-10 right-10 w-32 h-32 bg-amber-200 rounded-full opacity-30"></div>
       <div className="absolute bottom-20 left-10 w-40 h-40 bg-teal-200 rounded-full opacity-20"></div>
       
-      <div className="bg-white rounded-2xl shadow-2xl p-10 max-w-md w-full relative z-10 border-4 border-amber-100">
-        <h1 className="text-5xl font-bold text-center mb-2 text-amber-900" style={{ fontFamily: "Georgia, serif" }}>
+      <div className="bg-white rounded-3xl shadow-2xl p-12 max-w-2xl w-full relative z-10 border-6 border-amber-100">
+        <h1 className="text-6xl font-bold text-center mb-3 text-amber-900" style={{ fontFamily: "Georgia, serif" }}>
           Imposter
         </h1>
-        <p className="text-center text-amber-700 mb-8 text-lg font-medium">
+        <p className="text-center text-amber-700 mb-12 text-xl font-medium">
           Find the imposter & guess the secret word!
         </p>
 
@@ -63,26 +63,26 @@ export function HomePage({
         )}
 
         {!mode ? (
-          <div className="space-y-4 flex flex-col">
+          <div className="space-y-5 flex flex-col w-full">
             <button
               onClick={() => setMode("create")}
               disabled={!isConnected}
-              className="w-full py-4 bg-amber-300 hover:bg-amber-200 text-amber-900 rounded-xl disabled:bg-gray-300 font-bold text-lg transition transform hover:scale-105 shadow-xl border-3 border-amber-400 hover:border-amber-300"
+              className="w-full py-6 px-6 bg-amber-300 hover:bg-amber-200 text-amber-900 rounded-2xl disabled:bg-gray-300 font-bold text-2xl transition transform hover:scale-105 shadow-2xl border-4 border-amber-400 hover:border-amber-300"
             >
-              Create Room
+              ✨ Create Room
             </button>
             <button
               onClick={() => setMode("join")}
               disabled={!isConnected}
-              className="w-full py-4 bg-teal-300 hover:bg-teal-200 text-teal-900 rounded-xl disabled:bg-gray-300 font-bold text-lg transition transform hover:scale-105 shadow-xl border-3 border-teal-400 hover:border-teal-300"
+              className="w-full py-6 px-6 bg-teal-300 hover:bg-teal-200 text-teal-900 rounded-2xl disabled:bg-gray-300 font-bold text-2xl transition transform hover:scale-105 shadow-2xl border-4 border-teal-400 hover:border-teal-300"
             >
-              Join Room
+              🔑 Join Room
             </button>
           </div>
         ) : mode === "create" ? (
-          <form onSubmit={handleCreateRoom} className="space-y-4">
+          <form onSubmit={handleCreateRoom} className="space-y-6">
             <div>
-              <label className="block text-sm font-bold text-amber-900 mb-2">
+              <label className="block text-lg font-bold text-amber-900 mb-3">
                 Room Name
               </label>
               <input
@@ -90,11 +90,11 @@ export function HomePage({
                 value={roomName}
                 onChange={(e) => setRoomName(e.target.value)}
                 placeholder="Enter room name"
-                className="w-full px-4 py-2 border-2 border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50 text-amber-900 placeholder-amber-400"
+                className="w-full px-5 py-3 border-3 border-amber-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50 text-amber-900 placeholder-amber-400 text-lg font-medium"
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-amber-900 mb-2">
+              <label className="block text-lg font-bold text-amber-900 mb-3">
                 Your Name
               </label>
               <input
@@ -102,28 +102,28 @@ export function HomePage({
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
                 placeholder="Enter your name"
-                className="w-full px-4 py-2 border-2 border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50 text-amber-900 placeholder-amber-400"
+                className="w-full px-5 py-3 border-3 border-amber-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50 text-amber-900 placeholder-amber-400 text-lg font-medium"
               />
             </div>
             <button
               type="submit"
               disabled={!roomName.trim() || !playerName.trim()}
-              className="w-full py-4 bg-amber-300 hover:bg-amber-200 text-amber-900 rounded-xl disabled:bg-gray-300 font-bold transition transform hover:scale-105 shadow-xl border-3 border-amber-400 hover:border-amber-300"
+              className="w-full py-6 px-6 bg-amber-300 hover:bg-amber-200 text-amber-900 rounded-2xl disabled:bg-gray-300 font-bold text-2xl transition transform hover:scale-105 shadow-2xl border-4 border-amber-400 hover:border-amber-300"
             >
-              Create Room
+              ✨ Create Room
             </button>
             <button
               type="button"
               onClick={() => setMode(null)}
-              className="w-full py-3 bg-gray-300 hover:bg-gray-200 text-gray-900 rounded-lg font-semibold transition border-2 border-gray-400"
+              className="w-full py-3 bg-gray-300 hover:bg-gray-200 text-gray-900 rounded-xl font-bold transition border-3 border-gray-400"
             >
               Back
             </button>
           </form>
         ) : (
-          <form onSubmit={handleJoinRoom} className="space-y-4">
+          <form onSubmit={handleJoinRoom} className="space-y-6">
             <div>
-              <label className="block text-sm font-bold text-teal-900 mb-2">
+              <label className="block text-lg font-bold text-teal-900 mb-3">
                 Room ID
               </label>
               <input
@@ -131,11 +131,11 @@ export function HomePage({
                 value={roomId}
                 onChange={(e) => setRoomId(e.target.value)}
                 placeholder="Enter room ID"
-                className="w-full px-4 py-2 border-2 border-teal-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-teal-50 text-teal-900 placeholder-teal-400"
+                className="w-full px-5 py-3 border-3 border-teal-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 bg-teal-50 text-teal-900 placeholder-teal-400 text-lg font-medium"
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-teal-900 mb-2">
+              <label className="block text-lg font-bold text-teal-900 mb-3">
                 Your Name
               </label>
               <input
@@ -143,20 +143,20 @@ export function HomePage({
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
                 placeholder="Enter your name"
-                className="w-full px-4 py-2 border-2 border-teal-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-teal-50 text-teal-900 placeholder-teal-400"
+                className="w-full px-5 py-3 border-3 border-teal-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 bg-teal-50 text-teal-900 placeholder-teal-400 text-lg font-medium"
               />
             </div>
             <button
               type="submit"
               disabled={!roomId.trim() || !playerName.trim()}
-              className="w-full py-4 bg-teal-300 hover:bg-teal-200 text-teal-900 rounded-xl disabled:bg-gray-300 font-bold transition transform hover:scale-105 shadow-xl border-3 border-teal-400 hover:border-teal-300"
+              className="w-full py-6 px-6 bg-teal-300 hover:bg-teal-200 text-teal-900 rounded-2xl disabled:bg-gray-300 font-bold text-2xl transition transform hover:scale-105 shadow-2xl border-4 border-teal-400 hover:border-teal-300"
             >
-              Join Room
+              🔑 Join Room
             </button>
             <button
               type="button"
               onClick={() => setMode(null)}
-              className="w-full py-3 bg-gray-300 hover:bg-gray-200 text-gray-900 rounded-lg font-semibold transition border-2 border-gray-400"
+              className="w-full py-3 bg-gray-300 hover:bg-gray-200 text-gray-900 rounded-xl font-bold transition border-3 border-gray-400"
             >
               Back
             </button>
